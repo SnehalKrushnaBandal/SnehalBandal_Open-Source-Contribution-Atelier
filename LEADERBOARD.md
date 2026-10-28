@@ -4,7 +4,7 @@ Welcome to the permanent **Hall of Fame & Contributor Legacy** for **Open-Source
 
 | 1 | @brandonphelps1212 | 🥉 Bronze Contributor  | 1 | 25 | 2026-10-20 |
 
-| 1 | @Anshuu2004 | 🥇 Gold Contributor ⚡ | 8 | 200 | 2026-10-28 |
+| 1 | @Anshuu2004 | 🥇 Gold Contributor ⚡ | 9 | 225 | 2026-10-28 |
 
 | 1 | @ArshiBansal | 🥉 Bronze Contributor  | 1 | 25 | 2026-10-24 |
 
