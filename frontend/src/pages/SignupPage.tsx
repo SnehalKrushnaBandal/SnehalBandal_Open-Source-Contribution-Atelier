@@ -160,7 +160,7 @@ export function SignupPage() {
 
         <DemoLoginButton
           label="🚀 Demo Mode (No Signup Needed)"
-          className="w-full bg-green-200 border-4 border-black rounded-2xl py-3 px-4 flex items-center justify-center gap-3 font-bold hover:bg-green-300 transition-colors shadow-card-sm active:translate-y-1 active:shadow-none text-sm cursor-pointer"
+          className="w-full bg-green-200 hover:bg-green-300 active:bg-green-400 text-slate-950 dark:text-slate-950 border-4 border-black rounded-2xl py-3 px-4 flex items-center justify-center gap-3 font-bold transition-colors shadow-card-sm active:translate-y-1 active:shadow-none text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-60 disabled:cursor-not-allowed"
         />
 
         <div className="flex items-center gap-[16px] my-4">
@@ -208,7 +208,7 @@ export function SignupPage() {
           </label>
           <PasswordInput
             id="signup-password"
-            className="w-full rounded-2xl border-4 border-black bg-white px-5 py-3 text-black font-bold outline-none placeholder:text-muted/60 focus:bg-tertiary shadow-card-sm transition-all focus:-translate-y-1 focus:shadow-card"
+            className="w-full rounded-2xl border-4 border-black bg-white pl-5 pr-12 py-3 text-black font-bold outline-none placeholder:text-muted/60 focus:bg-tertiary shadow-card-sm transition-all focus:-translate-y-1 focus:shadow-card"
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
