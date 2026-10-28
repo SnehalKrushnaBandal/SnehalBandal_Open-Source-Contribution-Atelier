@@ -51,11 +51,19 @@ from .serializers import (
 def get_active_lessons():
     from apps.core.cache.stampede import stampede_protected_get_or_set
 
-    def generate():
-        return list(Lesson.objects.prefetch_related("exercises", "prerequisites").all())
+    lesson_slugs = stampede_protected_get_or_set(
+        "curriculum:slugs:v2",
+        lambda: list(Lesson.objects.values_list("slug", flat=True)),
+        timeout=60 * 60 * 24,
+    )
 
-    return stampede_protected_get_or_set(
-        "curriculum:full", generate, timeout=60 * 60 * 24
+    if not lesson_slugs:
+        return []
+
+    return list(
+        Lesson.objects.filter(slug__in=lesson_slugs)
+        .prefetch_related("exercises", "prerequisites")
+        .all()
     )
 
 
