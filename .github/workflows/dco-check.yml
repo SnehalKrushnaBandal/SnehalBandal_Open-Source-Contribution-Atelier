@@ -17,7 +17,7 @@ jobs:
     steps:
       # The API provides PR commits; checking out fork code is unnecessary here.
       - name: Check DCO sign-off
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
