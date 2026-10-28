@@ -24,6 +24,6 @@ jobs:
           fetch-depth: 0
 
       - name: Lint commit messages
-        uses: wagoid/commitlint-github-action@baffd3c16c570c0a26bf89be729b81bb796e9bd5 # v3.1.4
+        uses: wagoid/commitlint-github-action@b948419dd99f3fd78a6548d48f94e3df7f6bf3ed # v6.2.1
         with:
           configFile: ./commitlint.config.js
