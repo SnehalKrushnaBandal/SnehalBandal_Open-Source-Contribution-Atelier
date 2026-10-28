@@ -109,6 +109,7 @@ New contributors are welcome. Find a [`good first issue`](https://github.com/nan
 - [Content guide](docs/CONTENT_GUIDE.md)
 - [Architecture notes](docs/ARCHITECTURE.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Admin audit events](docs/AUDIT_EVENTS.md)
 - [Local setup FAQ](docs/TROUBLESHOOTING_SETUP.md)
 - [Contributor leaderboard](LEADERBOARD.md)
 

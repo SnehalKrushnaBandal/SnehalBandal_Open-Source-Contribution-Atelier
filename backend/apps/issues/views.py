@@ -1,8 +1,27 @@
 from rest_framework import permissions, viewsets
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 
+from apps.audit.admin_events import (
+    ISSUE_DELETED,
+    ISSUE_UPDATED,
+    record_admin_event,
+    target_type_for,
+)
 from apps.issues.models import IssueReport
 from apps.issues.serializers import IssueReportSerializer
+
+# Fields whose old and new value are written to the audit event. Everything
+# else (description, url_path, image) is user supplied free text or a file, so
+# only the fact that it changed is recorded.
+_AUDIT_VALUE_FIELDS = {"title", "status", "issue_type", "is_verified"}
+
+
+def _plain(value):
+    """FieldFile and friends to something comparable and JSON-safe."""
+    name = getattr(value, "name", None)
+    if name is not None and not isinstance(value, str):
+        return name
+    return value
 
 
 class IssueReportViewSet(viewsets.ModelViewSet):
@@ -24,8 +43,52 @@ class IssueReportViewSet(viewsets.ModelViewSet):
         self._check_and_award_bug_hunter_badge(instance)
 
     def perform_update(self, serializer):
+        before = {
+            field: _plain(getattr(serializer.instance, field, None))
+            for field in serializer.validated_data
+        }
         instance = serializer.save()
+        self._record_update(instance, before)
         self._check_and_award_bug_hunter_badge(instance)
+
+    def perform_destroy(self, instance):
+        target_id = instance.pk
+        snapshot = {
+            "title": instance.title,
+            "status": instance.status,
+            "issue_type": instance.issue_type,
+        }
+        super().perform_destroy(instance)
+        record_admin_event(
+            operation=ISSUE_DELETED,
+            action="deleted",
+            target_type=target_type_for(IssueReport),
+            target_id=target_id,
+            request=self.request,
+            payload=snapshot,
+            summary=f"Deleted issue report #{target_id}",
+        )
+
+    def _record_update(self, instance, before):
+        """Audit an admin edit: values for a few safe fields, names for the rest."""
+        changes = {}
+        for field, old in before.items():
+            new = _plain(getattr(instance, field, None))
+            if old == new:
+                continue
+            if field in _AUDIT_VALUE_FIELDS:
+                changes[field] = {"from": old, "to": new}
+            else:
+                changes[field] = {"changed": True}
+        record_admin_event(
+            operation=ISSUE_UPDATED,
+            action="updated",
+            target_type=target_type_for(instance),
+            target_id=instance.pk,
+            request=self.request,
+            payload={"changes": changes},
+            summary=f"Updated issue report #{instance.pk}",
+        )
 
     def _check_and_award_bug_hunter_badge(self, instance):
         if instance.user and instance.is_verified:

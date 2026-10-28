@@ -4,6 +4,12 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.audit.admin_events import (
+    USER_ROLE_ASSIGNED,
+    USER_ROLE_REVOKED,
+    record_admin_event,
+    target_type_for,
+)
 from apps.core.permissions import HasPermission, HasRole
 from apps.organizations.models import Organization, OrganizationMembership
 
@@ -157,6 +163,19 @@ class AssignRoleView(APIView):
                 organization_id=organization_id,
                 details=f"Assigned role {role.name}",
             )
+            record_admin_event(
+                operation=USER_ROLE_ASSIGNED,
+                action="created",
+                target_type=target_type_for(target_user),
+                target_id=target_user.pk,
+                request=request,
+                payload={
+                    "role_id": role.pk,
+                    "role_name": role.name,
+                    "organization_id": organization_id,
+                },
+                summary=f"Assigned role {role.name} to user #{target_user.pk}",
+            )
             return Response({"status": "Role assigned"}, status=status.HTTP_201_CREATED)
         return Response(
             {"status": "User already has this role"}, status=status.HTTP_200_OK
@@ -234,6 +253,19 @@ class RevokeRoleView(APIView):
                 role=role,
                 organization_id=organization_id,
                 details=f"Revoked role {role.name}",
+            )
+            record_admin_event(
+                operation=USER_ROLE_REVOKED,
+                action="deleted",
+                target_type=target_type_for(target_user),
+                target_id=target_user.pk,
+                request=request,
+                payload={
+                    "role_id": role.pk,
+                    "role_name": role.name,
+                    "organization_id": organization_id,
+                },
+                summary=f"Revoked role {role.name} from user #{target_user.pk}",
             )
             return Response({"status": "Role revoked"}, status=status.HTTP_200_OK)
         except UserRole.DoesNotExist:

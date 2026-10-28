@@ -121,6 +121,11 @@ class AuditEventListView(generics.ListAPIView):
         if correlation_id:
             queryset = queryset.filter(correlation_id=correlation_id.strip())
 
+        # Named admin operation, e.g. ?operation=issue.updated
+        operation = self.request.query_params.get("operation")
+        if operation:
+            queryset = queryset.filter(extra__operation=operation.strip())
+
         start_date = self.request.query_params.get("start_date")
         if start_date:
             dt = parse_iso_datetime(start_date)
@@ -203,4 +208,4 @@ class AuditEventDetailView(generics.RetrieveAPIView):
 
     queryset = AuditEvent.objects.select_related("actor").all()
     serializer_class = AuditEventSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAdminUser]
