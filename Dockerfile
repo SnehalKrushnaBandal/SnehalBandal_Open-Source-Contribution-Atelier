@@ -53,4 +53,4 @@ EXPOSE 7860
 
 USER appuser
 
-CMD ["sh", "-c", "python manage.py migrate && daphne -b 0.0.0.0 -p 7860 config.asgi:application"]
+CMD ["sh", "-c", "python manage.py migrate && python manage.py seed_lessons && daphne -b 0.0.0.0 -p 7860 config.asgi:application"]
