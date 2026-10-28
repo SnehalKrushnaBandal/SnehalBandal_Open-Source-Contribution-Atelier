@@ -54,86 +54,67 @@ jobs:
 
             const isHotStreak = recentMergedCount >= 2;
 
-            // Check PR labels or content for NSoC '26
-            const prLabels = (pr.labels || []).map(l => (typeof l === 'string' ? l : l.name));
-            const isNsoc = prLabels.includes('NSOC26') || /nsoc26/i.test(pr.title || '') || /nsoc26/i.test(pr.body || '');
+            // Labels are often placed on the linked issue rather than copied to the PR.
+            const normalizeLabel = value => String(value || '').trim().toUpperCase().replace(/[\s_-]+/g, '');
+            const prLabels = (pr.labels || []).map(l => normalizeLabel(typeof l === 'string' ? l : l.name));
+            const linkedIssueNumbers = [...new Set(
+              `${pr.body || ''}\n${pr.title || ''}`.match(/(?:^|[^\w])#(\d+)/g)?.map(ref => Number(ref.replace(/\D/g, ''))) || []
+            )];
+            const linkedIssueLabels = [];
+            for (const issueNumber of linkedIssueNumbers) {
+              try {
+                const issue = await github.rest.issues.get({ owner, repo, issue_number: issueNumber });
+                linkedIssueLabels.push(...(issue.data.labels || []).map(label => normalizeLabel(
+                  typeof label === 'string' ? label : label.name
+                )));
+              } catch (e) {
+                core.warning(`Could not read labels for linked issue #${issueNumber}: ${e.message}`);
+              }
+            }
+            const allLabels = [...new Set([...prLabels, ...linkedIssueLabels])];
+            const isNsoc = allLabels.includes('NSOC26') || /nsoc26/i.test(pr.title || '') || /nsoc26/i.test(pr.body || '');
             let nsocLevel = '';
             let earnedPoints = 25;
 
-            if (prLabels.includes('LEVEL3') || /LEVEL3/i.test(pr.body || '') || /LEVEL3/i.test(pr.title || '')) {
+            if (allLabels.includes('LEVEL3') || /LEVEL3/i.test(pr.body || '') || /LEVEL3/i.test(pr.title || '')) {
               nsocLevel = 'LEVEL3';
               earnedPoints = 50;
-            } else if (prLabels.includes('LEVEL2') || /LEVEL2/i.test(pr.body || '') || /LEVEL2/i.test(pr.title || '')) {
+            } else if (allLabels.includes('LEVEL2') || /LEVEL2/i.test(pr.body || '') || /LEVEL2/i.test(pr.title || '')) {
               nsocLevel = 'LEVEL2';
               earnedPoints = 25;
-            } else if (prLabels.includes('LEVEL1') || /LEVEL1/i.test(pr.body || '') || /LEVEL1/i.test(pr.title || '')) {
+            } else if (allLabels.includes('LEVEL1') || /LEVEL1/i.test(pr.body || '') || /LEVEL1/i.test(pr.title || '')) {
               nsocLevel = 'LEVEL1';
               earnedPoints = 10;
             }
 
             // Determine Contributor Tier
             let tierName = '🥉 Bronze Contributor';
-            let tierBadge = 'https://img.shields.io/badge/Contributor_Tier-Bronze_🥉-cd7f32?style=for-the-badge&logo=github&logoColor=white';
 
             if (mergedCount >= 10) {
               tierName = '💎 Diamond Contributor';
-              tierBadge = 'https://img.shields.io/badge/Contributor_Tier-Diamond_💎-b9f2ff?style=for-the-badge&logo=github&logoColor=white';
             } else if (mergedCount >= 5) {
               tierName = '🥇 Gold Contributor';
-              tierBadge = 'https://img.shields.io/badge/Contributor_Tier-Gold_🥇-ffd700?style=for-the-badge&logo=github&logoColor=white';
             } else if (mergedCount >= 3) {
               tierName = '🥈 Silver Contributor';
-              tierBadge = 'https://img.shields.io/badge/Contributor_Tier-Silver_🥈-c0c0c0?style=for-the-badge&logo=github&logoColor=white';
             }
 
-            const streakBadge = isHotStreak
-              ? ' [![Streak Badge](https://img.shields.io/badge/Streak-⚡_Hot_Contributor-ff4500?style=for-the-badge&logo=github&logoColor=white)](https://github.com/' + owner + '/' + repo + '/blob/main/LEADERBOARD.md)'
-              : '';
-
-            const streakNotice = isHotStreak
-              ? `\n🔥 **7-Day Hot Streak Active!** You've merged **${recentMergedCount} PRs** in the past 7 days! Keep up the momentum!`
-              : '';
-
-            const nsocBadge = isNsoc
-              ? `  [![NSoC '26](https://img.shields.io/badge/NSoC_'26-Verified_Contributor-00b4d8?style=for-the-badge&logo=codeforces&logoColor=white)](https://www.nsoc.in/projects)` +
-                (nsocLevel ? `  [![${nsocLevel}](https://img.shields.io/badge/NSoC_Difficulty-${nsocLevel}-0e8a16?style=for-the-badge)](https://www.nsoc.in/projects)` : '')
-              : '';
-
-            const nsocNotice = isNsoc
-              ? `\n❄️ **NSoC '26 Contribution Verified!** Awarded **${earnedPoints} Points** (\`${nsocLevel || 'General'}\`) for Nexus Spring / Winter of Code 2026!`
-              : '';
-
-            const tweetText = encodeURIComponent(`🎉 Excited to share that my Pull Request #${pr.number} ("${pr.title}") has been merged into Open-Source Contribution Atelier! 🚀\n\nCheck out the project: https://github.com/${owner}/${repo}`);
-            const linkedinText = encodeURIComponent(`https://github.com/${owner}/${repo}/pull/${pr.number}`);
-
             const certBody = [
-              `# 🎉 Your contribution just shipped, @${author}!`,
+              `Congratulations, @${author}!`,
               ``,
-              `Your pull request [**#${pr.number} — ${pr.title}**](https://github.com/${owner}/${repo}/pull/${pr.number}) is now part of \`main\`. Thank you for making the Atelier better!`,
+              `Your pull request #${pr.number} (${pr.title}) has been merged into main. Thank you for contributing to Open Source Contribution Atelier.`,
               ``,
-              `## 🏅 Your contributor card`,
+              `You now have ${mergedCount} merged contribution${mergedCount === 1 ? '' : 's'} and are a ${tierName}.`,
+              isNsoc
+                ? `This contribution is verified for NSoC '26${nsocLevel ? ` at ${nsocLevel} difficulty` : ''} and is worth ${earnedPoints} points.`
+                : '',
+              isHotStreak
+                ? `You are also on a 7-day hot streak with ${recentMergedCount} merged contributions.`
+                : '',
               ``,
-              `[![Open Source Contributor](https://img.shields.io/badge/Open_Source-Contributor-4ECDC4?style=for-the-badge&logo=github&logoColor=white)](https://github.com/${owner}/${repo}/pull/${pr.number})  [![${tierName}](${tierBadge})](https://github.com/${owner}/${repo}/blob/main/LEADERBOARD.md)${streakBadge}${nsocBadge}`,
+              `View the pull request: https://github.com/${owner}/${repo}/pull/${pr.number}`,
+              `View the contributor leaderboard: https://github.com/${owner}/${repo}/blob/main/LEADERBOARD.md`,
               ``,
-              `**${mergedCount} merged contribution${mergedCount === 1 ? '' : 's'}** · **${tierName}**${streakNotice}${nsocNotice}`,
-              ``,
-              `<details>`,
-              `<summary>✨ Copy a compact badge for your profile</summary>`,
-              ``,
-              `\`\`\`markdown`,
-              `[![Open Source Contributor](https://img.shields.io/badge/Open_Source-Contributor-4ECDC4?style=for-the-badge&logo=github&logoColor=white)](https://github.com/${owner}/${repo}/pull/${pr.number})`,
-              `[![${tierName}](${tierBadge})](https://github.com/${owner}/${repo}/blob/main/LEADERBOARD.md)`,
-              isNsoc ? `[![NSoC '26 Contributor](https://img.shields.io/badge/NSoC_'26-Verified_Contributor-00b4d8?style=for-the-badge&logo=codeforces&logoColor=white)](https://www.nsoc.in/projects)` : '',
-              `\`\`\``,
-              ``,
-              `</details>`,
-              ``,
-              `### 🚀 Want another small win?`,
-              `Pick an issue that matches your interests, or help review someone else's PR. Every thoughtful improvement counts.`,
-              ``,
-              `Share your milestone: [X](https://twitter.com/intent/tweet?text=${tweetText}) · [LinkedIn](https://www.linkedin.com/sharing/share-offsite/?url=${linkedinText})`,
-              ``,
-              `> Keep learning, keep building, and keep the open-source door open. 💛`
+              `Keep learning, building, and helping other contributors.`
             ].filter(Boolean).join('\n');
 
             await github.rest.issues.createComment({
