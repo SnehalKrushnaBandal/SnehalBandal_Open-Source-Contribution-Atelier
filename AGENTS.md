@@ -18,6 +18,7 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py seed_lessons && python manage.py seed_dashboard
 python manage.py check_curriculum_slugs  # curriculum.json ↔ DB lesson slug drift
+python scripts/validate_curriculum.py  # curriculum content: slugs, front matter, links, quizzes (from repo root)
 python manage.py runserver        # http://localhost:8000/api/
 python manage.py test             # or: pytest
 ```

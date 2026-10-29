@@ -99,6 +99,7 @@ Keep these values to letters, digits, `-`, `_` and `.`, since they are inserted 
 | Backend tests          | `cd backend && pytest`                                  |
 | Format backend         | `cd backend && black . && isort .`                      |
 | Check curriculum slugs | `cd backend && python manage.py check_curriculum_slugs` |
+| Validate curriculum content | `python scripts/validate_curriculum.py` |
 
 ## Contribute
 
