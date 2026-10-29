@@ -159,6 +159,54 @@ describe("useUserProgress", () => {
     expect(result.current.totalXP).toBe(10);
   });
 
+  describe("completion announcements", () => {
+    const run = async (bulk: () => Promise<unknown>, clicks: number) => {
+      vi.mocked(fetchApi).mockImplementation(((url: string) =>
+        url === "/progress/bulk-update/"
+          ? bulk()
+          : Promise.resolve([])) as never);
+      const { result } = renderHook(() => useUserProgress(), {
+        wrapper: createWrapper(),
+      });
+      // Fake timers are installed globally in test/setup.ts
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+      expect(result.current.isLoading).toBe(false);
+      for (let i = 0; i < clicks; i++) {
+        await act(async () => {
+          await result.current.syncProgress({
+            lesson_slug: "l1",
+            score: 10,
+            completed: true,
+          });
+        });
+      }
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000);
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+      return result;
+    };
+
+    it("announces success once for a debounced batch of clicks", async () => {
+      const bulk = vi.fn(() => Promise.resolve({}));
+      const result = await run(bulk, 3);
+      expect(bulk).toHaveBeenCalledTimes(1);
+      expect(result.current.announcement).toEqual({
+        type: "success",
+        message: "Lesson completion saved.",
+      });
+    });
+
+    it("announces an error when the sync fails", async () => {
+      const result = await run(() => Promise.reject(new Error("boom")), 1);
+      expect(result.current.announcement?.type).toBe("error");
+    });
+  });
+
   it("keeps optimistic totals when an earlier batch settles while a later one is queued", async () => {
     let releaseFirst: (v: unknown) => void = () => {};
     let bulkCalls = 0;

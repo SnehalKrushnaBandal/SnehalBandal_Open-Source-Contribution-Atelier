@@ -23,6 +23,7 @@ import {
   Keyboard,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { ProgressAnnouncer } from "../components/ui/ProgressAnnouncer";
 
 import SkeletonLesson from "../components/ui/skeletons/SkeletonLesson";
 import { useUserProgress } from "../hooks/useUserProgress";
@@ -133,7 +134,7 @@ function normalizeCommand(value: string) {
 export function LessonPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { isLessonCompleted, syncProgress } = useUserProgress();
+  const { isLessonCompleted, syncProgress, announcement } = useUserProgress();
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const { triggerConfetti } = useNotifications();
   const queryClient = useQueryClient();
@@ -944,6 +945,7 @@ export function LessonPage() {
   return (
     <div className="w-full h-screen flex flex-col overflow-hidden bg-white dark:bg-[#0a0a0f]">
       <OfflineBanner />
+      <ProgressAnnouncer announcement={announcement} />
       {/* Immersive Lesson Top Header Bar */}
       <LessonTopBar
         points={lesson.points || 15}

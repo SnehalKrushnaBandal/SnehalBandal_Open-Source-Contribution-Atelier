@@ -1,4 +1,4 @@
-import { useMemo, useRef, useCallback, useEffect } from "react";
+import { useMemo, useRef, useCallback, useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi } from "../lib/api";
 import { useLocalSync } from "./useLocalSync";
@@ -21,6 +21,11 @@ type SyncPayload = {
   client_timestamp?: number;
 };
 
+export type ProgressAnnouncement = {
+  type: "success" | "error";
+  message: string;
+} | null;
+
 export function useUserProgress() {
   const queryClient = useQueryClient();
   useLocalSync();
@@ -30,6 +35,8 @@ export function useUserProgress() {
   const pendingSyncQueue = useRef<Map<string, SyncPayload>>(new Map());
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const snapshotRef = useRef<ProgressEntry[] | null>(null);
+  // Screen reader announcement for the result of a completion sync
+  const [announcement, setAnnouncement] = useState<ProgressAnnouncement>(null);
   const inFlightRef = useRef(0);
 
   // 1. Query to fetch all progress
@@ -161,8 +168,27 @@ export function useUserProgress() {
 
           const previousState = snapshotRef.current;
 
+          // One announcement per batch, only when a completion is involved
+          const hasCompletion = queue.some((item) => item.completed);
+          if (hasCompletion) setAnnouncement(null);
+
           bulkSyncMutation.mutate(queue, {
+            onSuccess: () => {
+              if (hasCompletion) {
+                setAnnouncement({
+                  type: "success",
+                  message: "Lesson completion saved.",
+                });
+              }
+            },
             onError: (err) => {
+              if (hasCompletion) {
+                setAnnouncement({
+                  type: "error",
+                  message:
+                    "Could not save lesson completion. Your progress was restored. Please try again.",
+                });
+              }
               console.error("Bulk sync failed, rolling back UI...", err);
               // --- ROLLBACK UI ON FAILURE ---
               if (previousState) {
@@ -226,5 +252,6 @@ export function useUserProgress() {
     totalXP,
     syncProgress, // Now linked to our custom debounced function
     isSyncing: bulkSyncMutation.isPending,
+    announcement,
   };
 }
