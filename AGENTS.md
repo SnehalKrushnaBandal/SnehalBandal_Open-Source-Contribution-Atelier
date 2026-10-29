@@ -79,3 +79,7 @@ Boots Postgres, Redis, Django backend (:8000), and Vite frontend (:5173).
 - Frontend content (lessons, modules, quizzes) is purely Markdown + `curriculum.json` in `public/content/`. Adding content requires **zero code changes** — see `docs/CONTENT_GUIDE.md`.
 - Branch naming: `feat/...`, `fix/...`, `docs/...`, `refactor/...`.
 - PR template lives at `.github/pull_request_template.md`.
+
+## Releasing
+
+Maintainers: follow [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) (migrations, environment variables, build output, smoke tests, rollback; separate rows for frontend-only, backend-only and full-stack changes).
