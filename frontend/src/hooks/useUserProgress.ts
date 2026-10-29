@@ -30,6 +30,7 @@ export function useUserProgress() {
   const pendingSyncQueue = useRef<Map<string, SyncPayload>>(new Map());
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const snapshotRef = useRef<ProgressEntry[] | null>(null);
+  const inFlightRef = useRef(0);
 
   // 1. Query to fetch all progress
   const { data: progress = [], isLoading } = useQuery<ProgressEntry[]>({
@@ -49,7 +50,15 @@ export function useUserProgress() {
           metadata: { timestamp: Date.now() },
         }),
       }),
+    onMutate: () => {
+      inFlightRef.current += 1;
+    },
     onSettled: () => {
+      inFlightRef.current = Math.max(0, inFlightRef.current - 1);
+      // If more completions are still queued or in flight, a refetch now would
+      // return totals that do not include them yet and overwrite the optimistic
+      // cache. The last batch to settle refetches instead.
+      if (inFlightRef.current > 0 || pendingSyncQueue.current.size > 0) return;
       // Clear snapshot and force a refetch to ensure perfect sync with the database
       snapshotRef.current = null;
       queryClient.invalidateQueries({ queryKey: ["userProgress"] });
