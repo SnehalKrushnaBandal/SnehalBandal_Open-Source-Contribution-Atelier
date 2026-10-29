@@ -1903,6 +1903,50 @@ class HeatmapView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
+XP_BREAKDOWN_CATEGORIES = {
+    "lessons": ("Lessons", ["lesson"]),
+    "quizzes": ("Quizzes", []),
+    "challenges": ("Challenges", ["exercise", "bounty"]),
+    "streaks": ("Streaks", []),
+    "community": ("Community", ["pr", "issue", "review"]),
+}
+
+
+class XPBreakdownView(APIView):
+    """XP earned by the current user, grouped by category.
+
+    Only positive XPEvent rows count as earned XP. Quizzes and streaks have no
+    XPEvent source type yet, so they report 0; any other earning source (badges,
+    milestones) is returned as "other" so the total still adds up.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        totals = dict(
+            XPEvent.objects.filter(user=request.user, xp_delta__gt=0)
+            .values_list("source_type")
+            .annotate(total=Sum("xp_delta"))
+        )
+        known = set()
+        categories = []
+        for key, (label, sources) in XP_BREAKDOWN_CATEGORIES.items():
+            known.update(sources)
+            categories.append(
+                {
+                    "key": key,
+                    "label": label,
+                    "xp": sum(totals.get(s, 0) for s in sources),
+                }
+            )
+        other = sum(xp for source, xp in totals.items() if source not in known)
+        if other:
+            categories.append({"key": "other", "label": "Other", "xp": other})
+        return Response(
+            {"total_xp": sum(c["xp"] for c in categories), "categories": categories}
+        )
+
+
 class StreakStatusView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

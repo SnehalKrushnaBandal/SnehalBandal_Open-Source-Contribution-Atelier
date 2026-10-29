@@ -32,6 +32,7 @@ from .views import (
     StreakStatusView,
     UserProgressPDFExportView,
     WeeklyGoalView,
+    XPBreakdownView,
 )
 
 urlpatterns = [
@@ -47,6 +48,7 @@ urlpatterns = [
     path("buffer-metrics/", BufferMetricsView.as_view(), name="buffer-metrics"),
     path("heatmap/", HeatmapView.as_view(), name="heatmap"),
     path("heatmap/export/", HeatmapCSVExportView.as_view(), name="heatmap-export-csv"),
+    path("xp-breakdown/", XPBreakdownView.as_view(), name="xp-breakdown"),
     path("streak/", StreakStatusView.as_view(), name="streak-status"),
     path("streak/recovery/", StreakRecoveryView.as_view(), name="streak-recovery"),
     path("export/pdf/", UserProgressPDFExportView.as_view(), name="export-pdf"),
