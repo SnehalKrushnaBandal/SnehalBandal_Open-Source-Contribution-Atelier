@@ -38,7 +38,8 @@ npm install
 npm run dev          # http://localhost:5173/
 npm run lint         # ESLint
 npm run format       # Prettier
-npm run test         # Vitest
+npm run test         # Vitest (all projects, including Storybook browser tests)
+npm run test:unit    # Vitest unit project only: what the "Frontend Unit Tests" PR job runs
 npm run build        # tsc -b && vite build
 ```
 
