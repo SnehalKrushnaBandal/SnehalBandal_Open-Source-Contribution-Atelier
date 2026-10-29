@@ -1,3 +1,4 @@
+import { usePageMeta } from "../hooks/usePageMeta";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
   keepPreviousData,
@@ -195,6 +196,9 @@ function normalizeRows(
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function LeaderboardPage() {
+  usePageMeta(
+    "See the top Atelier contributors ranked by XP, streaks and badges, and track your own rank on the leaderboard.",
+  );
   const { user } = useAuth();
   const queryClient = useQueryClient();
 

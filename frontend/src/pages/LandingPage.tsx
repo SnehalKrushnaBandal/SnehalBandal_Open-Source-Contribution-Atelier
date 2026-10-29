@@ -1,3 +1,4 @@
+import { usePageMeta } from "../hooks/usePageMeta";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -60,6 +61,9 @@ const VIBE_OPTIONS: VibeOption[] = [
 ];
 
 export function LandingPage() {
+  usePageMeta(
+    "Learn Git and open source contribution through interactive challenges, a hands-on sandbox and guided lessons on Open Source Contribution Atelier.",
+  );
   const navigate = useNavigate();
   const auth = useAuth();
   const login = auth.login;
