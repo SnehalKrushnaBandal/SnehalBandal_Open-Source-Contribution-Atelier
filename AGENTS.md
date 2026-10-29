@@ -30,6 +30,8 @@ black . && isort .
 
 Pyright config is at repo root (`pyrightconfig.json` with `extraPaths: ["backend"]`).
 
+Pull requests run `.github/workflows/backend-lint.yml`: Black, isort, and Pyright as "no new errors" (the backend still has many old Pyright errors, so a file fails only when it has more errors than on `main`). Check locally with `npx pyright backend`; the comparison is `scripts/ci/pyright_regressions.py`.
+
 ### Frontend (Node 20+)
 
 ```bash
