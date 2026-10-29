@@ -38,6 +38,7 @@ import { fetchApi } from "../lib/api";
 import { eventBus } from "../core/events";
 import { queueQuizSubmission } from "../services/offlineSync";
 import { Lesson, fetchLessonsApiResult } from "../lib/lessons";
+import { findCurriculumLesson, loadCurriculumCached } from "../lib/curriculum";
 import {
   buildDriftReport,
   type CurriculumDriftReport,
@@ -393,15 +394,10 @@ export function LessonPage() {
     setIsLoading(true);
     setError(null);
 
-    const curriculumPromise = fetch("/content/curriculum.json")
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .catch((err) => {
-        console.warn("[LessonPage] Failed to load curriculum.json:", err);
-        return null;
-      });
+    const curriculumPromise = loadCurriculumCached().catch((err) => {
+      console.warn("[LessonPage] Failed to load curriculum.json:", err);
+      return null;
+    });
 
     const lessonsPromise = fetchLessonsApiResult();
 
@@ -423,36 +419,30 @@ export function LessonPage() {
 
         let found = lessonsData.find((l) => l.slug === slug);
 
-        if (!found && curriculumJson?.modules) {
-          for (const mod of curriculumJson.modules) {
-            const curriculumLesson = mod.lessons.find(
-              (l: { slug: string; title: string; difficulty?: string }) =>
-                l.slug === slug,
-            );
-            if (curriculumLesson) {
-              found = {
-                id: 0,
-                slug: curriculumLesson.slug,
-                title: curriculumLesson.title,
-                description: curriculumLesson.description || "",
-                explanation: "",
-                expected: curriculumLesson.expected || "",
-                hint:
-                  curriculumLesson.hint || "Read the lesson content carefully.",
-                difficulty: curriculumLesson.difficulty || "beginner",
-                points: curriculumLesson.points || 15,
-                estimatedMinutes: curriculumLesson.estimatedMinutes || 10,
-                learningObjectives: [],
-                tips: [],
-                exercises: [],
-                quizzes: curriculumLesson.quizzes || [],
-                filePath: curriculumLesson.filePath,
-                category: mod.id || "general",
-                order: mod.lessons.indexOf(curriculumLesson),
-              } as Lesson;
-              break;
-            }
-          }
+        const entry = !found
+          ? findCurriculumLesson(curriculumJson, slug)
+          : undefined;
+        if (entry) {
+          const { lesson: curriculumLesson, module: mod, index } = entry;
+          found = {
+            id: 0,
+            slug: curriculumLesson.slug,
+            title: curriculumLesson.title,
+            description: curriculumLesson.description || "",
+            explanation: "",
+            expected: curriculumLesson.expected || "",
+            hint: curriculumLesson.hint || "Read the lesson content carefully.",
+            difficulty: curriculumLesson.difficulty || "beginner",
+            points: curriculumLesson.points || 15,
+            estimatedMinutes: curriculumLesson.estimatedMinutes || 10,
+            learningObjectives: [],
+            tips: [],
+            exercises: [],
+            quizzes: curriculumLesson.quizzes || [],
+            filePath: curriculumLesson.filePath,
+            category: mod.id || "general",
+            order: index,
+          } as Lesson;
         }
 
         if (!found) {
