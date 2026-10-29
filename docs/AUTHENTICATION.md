@@ -200,3 +200,25 @@ to let users "Sign in with Atelier."
 consumer currently exists — this is intended for future third-party
 integrations (e.g. partner learning platforms), not used by the Atelier
 frontend itself.
+
+## Validation Errors (Sign-up and Other Endpoints)
+
+A request that fails validation, whichever rule fails and whichever endpoint, answers `400` with one envelope (`apps/accounts/exceptions.py`):
+
+```json
+{
+  "error": true,
+  "code": "validation_error",
+  "message": "An account with this email address already exists.",
+  "errors":      { "email": ["An account with this email address already exists."] },
+  "error_codes": { "email": ["email_taken"] }
+}
+```
+
+- `message` is the first message, ready to show. `errors` maps each field to its messages so a form can show them next to the fields; nested serializers and list items use dotted keys (`profile.timezone`, `items.1.name`), and errors that belong to no field use `non_field_errors`.
+- `error_codes` has the same shape with **stable codes** to branch on instead of parsing text. Sign-up codes: `required`, `blank`, `invalid` (bad email or type), `min_length`, `max_length`, `username_taken`, `email_taken`, `password_too_long`, `password_no_number`, `password_no_special`, `password_no_uppercase`, `password_no_lowercase`. Every failed password rule is reported at once.
+- `errors` and `error_codes` are left out when no field is involved (for example a request body that is a list gets `non_field_errors`).
+- The response never contains stored account data (hashes, ids, names or e-mail of the existing account) and the submitted password is never echoed. Like most sign-up forms it does say that a username or e-mail is taken.
+
+On the frontend, `ApiError` exposes these as `fieldErrors` and `fieldCodes`, and the sign-up form shows them under each field.
+

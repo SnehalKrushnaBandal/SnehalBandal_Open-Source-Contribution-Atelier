@@ -16,22 +16,43 @@ from .jwt import DynamicSaltRefreshToken
 
 
 def validate_strong_password(value):
+    """Check every password rule and report all the ones that fail, each with its own code."""
+    problems = []
     if len(value) > 128:
-        raise serializers.ValidationError("Password cannot exceed 128 characters.")
+        problems.append(
+            serializers.ErrorDetail(
+                "Password cannot exceed 128 characters.", code="password_too_long"
+            )
+        )
     if not re.search(r"\d", value):
-        raise serializers.ValidationError("Password must contain at least one number.")
+        problems.append(
+            serializers.ErrorDetail(
+                "Password must contain at least one number.", code="password_no_number"
+            )
+        )
     if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
-        raise serializers.ValidationError(
-            "Password must contain at least one special character (!@#$%^&* etc)."
+        problems.append(
+            serializers.ErrorDetail(
+                "Password must contain at least one special character (!@#$%^&* etc).",
+                code="password_no_special",
+            )
         )
     if not re.search(r"[A-Z]", value):
-        raise serializers.ValidationError(
-            "Password must contain at least one uppercase letter."
+        problems.append(
+            serializers.ErrorDetail(
+                "Password must contain at least one uppercase letter.",
+                code="password_no_uppercase",
+            )
         )
     if not re.search(r"[a-z]", value):
-        raise serializers.ValidationError(
-            "Password must contain at least one lowercase letter."
+        problems.append(
+            serializers.ErrorDetail(
+                "Password must contain at least one lowercase letter.",
+                code="password_no_lowercase",
+            )
         )
+    if problems:
+        raise serializers.ValidationError(problems)
     return value
 
 
@@ -46,7 +67,9 @@ class SignupSerializer(serializers.ModelSerializer):
         """Reject duplicate usernames using a case-insensitive comparison."""
         normalized = value.strip()
         if User.objects.filter(username__iexact=normalized).exists():
-            raise serializers.ValidationError("Username is already taken.")
+            raise serializers.ValidationError(
+                "Username is already taken.", code="username_taken"
+            )
         return normalized
 
     def validate_email(self, value):
@@ -54,7 +77,8 @@ class SignupSerializer(serializers.ModelSerializer):
         normalized = value.strip().lower()
         if User.objects.filter(email__iexact=normalized).exists():
             raise serializers.ValidationError(
-                "An account with this email address already exists."
+                "An account with this email address already exists.",
+                code="email_taken",
             )
         return normalized
 
