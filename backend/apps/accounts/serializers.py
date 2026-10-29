@@ -77,12 +77,16 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     linkedin_url = serializers.URLField(required=False, allow_blank=True)
     github_url = serializers.URLField(required=False, allow_blank=True)
     bio = serializers.CharField(required=False, allow_blank=True)
+    first_name = serializers.CharField(
+        required=False, allow_blank=True, max_length=150, trim_whitespace=True
+    )
     receive_weekly_digest = serializers.BooleanField(required=False)
 
     class Meta:
         model = User
         fields = (
             "email",
+            "first_name",
             "password",
             "avatar",
             "cover_image",
@@ -205,6 +209,7 @@ class UserListSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "username",
+            "first_name",
             "email",
             "is_staff",
             "avatar_url",

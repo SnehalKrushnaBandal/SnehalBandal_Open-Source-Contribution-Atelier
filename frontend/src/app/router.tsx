@@ -1107,6 +1107,15 @@ export function AppRouter() {
         />
 
         <Route
+          path="/settings/profile"
+          element={
+            <ProtectedRoute>
+              <ProfileSettingsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/settings/notifications"
           element={
             <ProtectedRoute>
