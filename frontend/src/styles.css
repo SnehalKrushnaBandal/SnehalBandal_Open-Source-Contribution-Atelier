@@ -382,6 +382,17 @@ html.dark
   color: #ffcc00;
 }
 
+/* Solid light-green and amber buttons keep dark text in the dark theme (the generic
+   .text-black rule above would turn it light on them: about 2:1 contrast). */
+html.dark .bg-emerald-300.text-black,
+html.dark .bg-emerald-400.text-black,
+html.dark .bg-emerald-500.text-black,
+html.dark .bg-amber-300.text-black,
+html.dark .bg-amber-400.text-black,
+html.dark .bg-amber-500.text-black {
+  color: #0f0f14 !important;
+}
+
 html.dark .bg-accent.text-black,
 html.dark .bg-primary.text-black,
 html.dark .bg-tertiary.text-black,

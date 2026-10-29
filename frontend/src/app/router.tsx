@@ -279,6 +279,12 @@ const PeerReviewPage = lazy(() =>
   })),
 );
 
+const ActivityTimelinePage = lazy(() =>
+  import("../pages/ActivityTimelinePage").then((module) => ({
+    default: module.ActivityTimelinePage,
+  })),
+);
+
 const PathwayPage = lazy(() =>
   import("../pages/PathwayPage").then((module) => ({
     default: module.PathwayPage,
@@ -570,6 +576,15 @@ export function AppRouter() {
           element={
             <ProtectedRoute>
               <LeaderboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/activity"
+          element={
+            <ProtectedRoute>
+              <ActivityTimelinePage />
             </ProtectedRoute>
           }
         />
@@ -1084,6 +1099,15 @@ export function AppRouter() {
 
         <Route
           path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfileSettingsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings/profile"
           element={
             <ProtectedRoute>
               <ProfileSettingsPage />
