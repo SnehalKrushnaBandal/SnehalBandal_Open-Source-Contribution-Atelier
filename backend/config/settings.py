@@ -8,6 +8,7 @@ from pathlib import Path
 
 import dj_database_url
 import stripe
+from corsheaders.defaults import default_headers as default_cors_headers
 
 # pyrefly: ignore [missing-import]
 from django.core.exceptions import ImproperlyConfigured
@@ -172,6 +173,11 @@ for _co in [
 
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG and not TESTING
+
+# The frontend is on another origin, so the browser only lets it read X-Request-ID (to show or
+# report it next to an error) when the header is exposed, and only lets it send one when it is allowed.
+CORS_EXPOSE_HEADERS = ["X-Request-ID"]
+CORS_ALLOW_HEADERS = [*default_cors_headers, "x-request-id"]
 
 
 def _validate_cors_allowed_origins(origins: list[str]) -> list[str]:
