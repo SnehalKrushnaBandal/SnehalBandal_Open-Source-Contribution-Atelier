@@ -25,6 +25,10 @@ precompressed `.gz` / `.br` copies are skipped).
 The script also writes a report to `frontend/public/performance.json`, which the
 admin performance dashboard reads.
 
+On pull requests the workflow also builds the base branch and posts a comment with the
+JS and CSS size change (`frontend/scripts/bundle-size-report.ts`). The comment is best
+effort on fork PRs, where the token is read only; the same report is in the job summary.
+
 ### Lighthouse
 
 `lighthouserc.cjs` reads its thresholds straight from the `lighthouse` section of
