@@ -3,6 +3,7 @@ from django.urls import path
 from .views import ExportNotesView  # ✅ ADDED
 from .views import QuizNonceView  # NEW: Imported the Nonce View
 from .views import (
+    ActivityTimelineView,
     BadgeListView,
     BufferMetricsView,
     BulkProgressUpdateView,
@@ -34,6 +35,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path("activity/", ActivityTimelineView.as_view(), name="activity-timeline"),
     # Badges
     path("leaderboard/", LeaderboardView.as_view(), name="leaderboard"),
     path(

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
+  History,
   BookOpen,
   LayoutGrid,
   Trophy,
@@ -64,6 +65,7 @@ const NAV_ITEMS: NavEntry[] = [
   },
   { to: "/community", label: "Community", icon: Users },
   { to: "/leaderboard", label: "Leaderboard", icon: Award },
+  { to: "/activity", label: "My activity", icon: History },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [

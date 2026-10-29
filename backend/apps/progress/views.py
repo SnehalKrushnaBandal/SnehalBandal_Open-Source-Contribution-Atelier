@@ -15,7 +15,12 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.http import content_disposition_header
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework import permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView
@@ -59,6 +64,12 @@ from .serializers import (
     LessonProgressSerializer,
     QuizAttemptSerializer,
     WeeklyGoalSerializer,
+)
+from .services.activity_timeline import (
+    TimelineError,
+    get_activity_timeline,
+    parse_limit,
+    parse_types,
 )
 from .throttles import HelpRequestRateThrottle
 
@@ -939,6 +950,48 @@ class ContributorTimelineView(APIView):
                 "contribution_streak": completed_lessons,
             }
         )
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            "type",
+            str,
+            many=True,
+            description=(
+                "Only these activity types: lesson_completed, quiz_attempt, "
+                "certificate_issued, badge_earned. Repeat the parameter or separate "
+                "values with commas. Omit for every type."
+            ),
+        ),
+        OpenApiParameter("limit", int, description="Page size, 1 to 100 (default 20)."),
+        OpenApiParameter(
+            "cursor", str, description="`next_cursor` from the previous page."
+        ),
+    ],
+    responses={200: OpenApiResponse(description="One page of the user's activity.")},
+)
+class ActivityTimelineView(APIView):
+    """The signed-in learner's own activity, newest first, with keyset pagination.
+
+    See ``apps/progress/services/activity_timeline.py`` for the response shape.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        try:
+            types = parse_types(request.query_params.getlist("type"))
+            limit = parse_limit(request.query_params.get("limit"))
+            data = get_activity_timeline(
+                request.user,
+                types=types,
+                limit=limit,
+                cursor=request.query_params.get("cursor") or None,
+            )
+        except TimelineError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data, status=status.HTTP_200_OK)
 
 
 # NEW: View to generate the one-time Nonce for Quizzes
