@@ -84,6 +84,43 @@ The default backend is `django.core.mail.backends.console.EmailBackend` for deve
    - Rate limits are applied to prevent email bombing (`3/minute` for request, `5/minute` for verify).
    - Generic responses are used for the request endpoint to prevent email enumeration attacks.
 
+## Sessions After a Password Change or Reset
+
+Changing or resetting a password must end every other way the account is signed in. Otherwise a stolen
+token keeps working for as long as it lives (30 days for access tokens and a year for refresh tokens by
+default).
+
+### What is revoked
+
+| Credential | How it is revoked |
+| --- | --- |
+| Access tokens | They carry the profile's `token_version` and the first 16 characters of the password hash. The version is incremented and the hash changes, so every earlier token fails verification (`apps/accounts/jwt.py`). |
+| Refresh tokens | Every outstanding token for the user is added to the SimpleJWT blacklist on the server, and the refresh endpoint verifies the same claims. A refresh token that was never rotated is rejected as well. |
+| Device sessions | The `UserSession` rows (the device list) are deleted. |
+| WebSocket connections | A `token_revoked` event is published so open connections close. A Redis outage never blocks the change. |
+| Tokens issued before the claims existed | They are accepted only if they were issued after the last password change, so they cannot survive one. |
+
+The change and the revocation run in one database transaction: if revoking fails the password is not changed.
+
+### What is kept
+
+* **`POST /api/auth/change-password/`** (signed in): the device making the request stays signed in. Its
+  `UserSession` is kept and the response contains a **fresh pair**, `access` and `refresh`, bound to that
+  same session. Store them and replace the old pair. The previous tokens of that device stop working too.
+  The existing `status` field is unchanged.
+* **`POST /api/auth/password-reset/confirm/`** (signed out): everything is revoked and nothing is issued. The
+  user signs in again with the new password.
+* A failed change (wrong current password, weak new password) revokes nothing.
+* Other users are never affected.
+
+### Where tokens are issued
+
+Login, the refresh endpoint, magic-link and OAuth sign-in, and `TokenService` all use
+`DynamicSaltRefreshToken`, which carries the claims above and records the token so it can be blacklisted. Use it
+for any new place that issues tokens, not SimpleJWT's plain `RefreshToken`.
+
+Tests: `apps/accounts/tests/test_password_change_sessions.py`.
+
 ## Guidelines for Extending Passwordless Authentication
 
 - When introducing new passwordless mechanisms (e.g., OTP via SMS), use the existing token generation and verification architecture as a baseline.

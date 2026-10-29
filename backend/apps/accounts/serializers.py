@@ -7,7 +7,12 @@ User = get_user_model()
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.serializers import (
+    TokenObtainPairSerializer,
+    TokenRefreshSerializer,
+)
+
+from .jwt import DynamicSaltRefreshToken
 
 
 def validate_strong_password(value):
@@ -300,6 +305,10 @@ class UserListSerializer(serializers.ModelSerializer):
 class EmailOrUsernameTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Allow login with either username or email in the username field, plus optional remember me lifetime and 2FA TOTP code validation."""
 
+    # Tokens carry the password-hash and token-version claims, so a password change or a
+    # revocation invalidates them (see apps.accounts.jwt).
+    token_class = DynamicSaltRefreshToken
+
     remember = serializers.BooleanField(required=False, default=False)
     totp_code = serializers.CharField(required=False, allow_blank=True, write_only=True)
 
@@ -526,3 +535,11 @@ class UserSessionSerializer(serializers.ModelSerializer):
             "last_activity",
         )
         read_only_fields = fields
+
+
+class DynamicSaltTokenRefreshSerializer(TokenRefreshSerializer):
+    """Refresh with the dynamic-salt class so a refresh token issued before a password change
+    or revocation is rejected, instead of being accepted because it is merely not blacklisted.
+    """
+
+    token_class = DynamicSaltRefreshToken
